@@ -51,7 +51,7 @@ static const double kScaleFactor = 0.1;
 class DensoRobotPickAndPlaceDemo
 {
 public:
-  DensoRobotPickAndPlaceDemo(const rclcpp::Node::SharedPtr& node)
+  DensoRobotPickAndPlaceDemo(const rclcpp::Node::SharedPtr & node)
   : node_(node), robotStatePublisher_(
       node_->create_publisher<moveit_msgs::msg::DisplayRobotState>("display_robot_state", 1))
   {
@@ -63,17 +63,17 @@ public:
   void run()
   {
     RCLCPP_INFO(kLogger, "***** Initializing DensoRobotPickAndPlaceDemo ...");
-    if(!node_->get_parameter("scale_factor", scaleFactor_)) {
+    if (!node_->get_parameter("scale_factor", scaleFactor_)) {
       scaleFactor_ = kScaleFactor;
     }
     RCLCPP_INFO(kLogger, "***** DensoRobotPickAndPlaceDemo - Scale factor: %.2f", scaleFactor_);
 
-    if(!node_->get_parameter("num_cycles", numCycles_)) {
+    if (!node_->get_parameter("num_cycles", numCycles_)) {
       numCycles_ = 1;
     }
     RCLCPP_INFO(kLogger, "***** DensoRobotPickAndPlaceDemo - Number of cycles: %d", numCycles_);
 
-    if(!node_->get_parameter("model", robotModel_)) {
+    if (!node_->get_parameter("model", robotModel_)) {
       RCLCPP_FATAL(kLogger, "no model parameter specified !!");
       return;
     }
@@ -105,7 +105,8 @@ public:
 
     std::string robotModel = kRobotNameHsr065;
     if (
-      std::equal(robotModel.begin(),robotModel.end(),
+      std::equal(
+        robotModel.begin(), robotModel.end(),
         robotModel_.begin(), robotModel_.begin() + robotModel.length()))
     {
       // hsr065 robot
@@ -173,8 +174,8 @@ public:
     // (e.g. open gripper / vacuum OFF)
     // ********************************************************
 
-    for(int i=0; i < numCycles_; i++) {
-      RCLCPP_INFO(kLogger, "***** Starting cycle#%d ...", i+1);
+    for (int i = 0; i < numCycles_; i++) {
+      RCLCPP_INFO(kLogger, "***** Starting cycle#%d ...", i + 1);
 
       // Planning to Approach Position for Pick Operation
       moveGroup.setJointValueTarget(approachPickPos);
@@ -245,7 +246,7 @@ public:
       // Moving back to Approach Position for Place Operation
       moveGroup.move();
 
-      RCLCPP_INFO(kLogger, "***** Cycle#%d ended ...", i+1);
+      RCLCPP_INFO(kLogger, "***** Cycle#%d ended ...", i + 1);
     }
 
     RCLCPP_INFO(kLogger, "***** Cycles ended !!");
@@ -260,7 +261,7 @@ private:
   std::string robotModel_;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   RCLCPP_INFO(kLogger, "***** Initializing node ...");
   rclcpp::init(argc, argv);
@@ -271,10 +272,10 @@ int main(int argc, char** argv)
 
   DensoRobotPickAndPlaceDemo demo(node);
   std::thread run_demo([&demo]() {
-    // Sleep 5 seconds before running demo
-    rclcpp::sleep_for(std::chrono::seconds(5));
-    demo.run();
-  });
+      // Sleep 5 seconds before running demo
+      rclcpp::sleep_for(std::chrono::seconds(5));
+      demo.run();
+    });
 
   rclcpp::spin(node);
   run_demo.join();

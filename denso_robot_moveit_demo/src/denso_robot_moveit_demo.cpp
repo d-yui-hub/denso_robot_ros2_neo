@@ -52,7 +52,7 @@ static const double kScaleFactor = 0.1;
 class DensoRobotCppDemo
 {
 public:
-  DensoRobotCppDemo(const rclcpp::Node::SharedPtr& node)
+  DensoRobotCppDemo(const rclcpp::Node::SharedPtr & node)
   : node_(node), robotStatePublisher_(
       node_->create_publisher<moveit_msgs::msg::DisplayRobotState>("display_robot_state", 1))
   {
@@ -63,12 +63,12 @@ public:
   void run()
   {
     RCLCPP_INFO(kLogger, "***** Initializing DensoRobotCppDemo ...");
-    if(!node_->get_parameter("scale_factor", scaleFactor_)) {
+    if (!node_->get_parameter("scale_factor", scaleFactor_)) {
       scaleFactor_ = kScaleFactor;
     }
     RCLCPP_INFO(kLogger, "***** DensoRobotCppDemo - Scale factor: %.2f", scaleFactor_);
 
-    if(!node_->get_parameter("model", robotModel_)) {
+    if (!node_->get_parameter("model", robotModel_)) {
       RCLCPP_FATAL(kLogger, "no model parameter specified !!");
       return;
     }
@@ -102,7 +102,8 @@ public:
 
     std::string robotModel = kRobotNameCobotta;
     if (
-      std::equal(robotModel.begin(),robotModel.end(),
+      std::equal(
+        robotModel.begin(), robotModel.end(),
         robotModel_.begin(), robotModel_.begin() + robotModel.length()))
     {
       // cobotta robot
@@ -190,8 +191,9 @@ public:
       // End Positions
     } else {
       robotModel = kRobotNameVs060;
-      if (std::equal(robotModel.begin(),robotModel.end(),
-        robotModel_.begin(), robotModel_.begin() + robotModel.length()))
+      if (std::equal(
+          robotModel.begin(), robotModel.end(),
+          robotModel_.begin(), robotModel_.begin() + robotModel.length()))
       {
         // vs060 robot
         // Home position in joint values
@@ -205,7 +207,7 @@ public:
         moveit::planning_interface::MoveGroupInterface::Plan movePlanHomeVs060;
 
         bool successHomeVs060 = (
-            moveGroup.plan(movePlanHomeVs060) == moveit::core::MoveItErrorCode::SUCCESS);
+          moveGroup.plan(movePlanHomeVs060) == moveit::core::MoveItErrorCode::SUCCESS);
         RCLCPP_INFO(
           kLogger, "***** Plan to Home (joint space goal) %s",
           successHomeVs060 ? "SUCCEEDED" : "FAILED");
@@ -278,8 +280,9 @@ public:
         // End Positions
       } else {
         robotModel = kRobotNameHsr065;
-        if (std::equal(robotModel.begin(),robotModel.end(),
-          robotModel_.begin(), robotModel_.begin() + robotModel.length()))
+        if (std::equal(
+            robotModel.begin(), robotModel.end(),
+            robotModel_.begin(), robotModel_.begin() + robotModel.length()))
         {
           // hsr065 robot
           RCLCPP_INFO(
@@ -371,8 +374,10 @@ public:
           targetPos7.orientation.w = 1;
           // End Positions
         } else {
-        RCLCPP_FATAL(kLogger, "ERROR: positions for the specified robot model not implemented !!");
-        return;
+          RCLCPP_FATAL(
+            kLogger,
+            "ERROR: positions for the specified robot model not implemented !!");
+          return;
         }
       }
     }
@@ -446,20 +451,22 @@ private:
   std::string robotModel_;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   RCLCPP_INFO(kLogger, "***** Initializing node ...");
   rclcpp::init(argc, argv);
   rclcpp::NodeOptions nodeOptions;
 
-  rclcpp::Node::SharedPtr node = rclcpp::Node::make_shared("denso_robot_moveit_demo", "", nodeOptions);
+  rclcpp::Node::SharedPtr node = rclcpp::Node::make_shared(
+    "denso_robot_moveit_demo", "",
+    nodeOptions);
 
   DensoRobotCppDemo demo(node);
   std::thread run_demo([&demo]() {
-    // Sleep 5 seconds before running demo
-    rclcpp::sleep_for(std::chrono::seconds(5));
-    demo.run();
-  });
+      // Sleep 5 seconds before running demo
+      rclcpp::sleep_for(std::chrono::seconds(5));
+      demo.run();
+    });
 
   rclcpp::spin(node);
   run_demo.join();
