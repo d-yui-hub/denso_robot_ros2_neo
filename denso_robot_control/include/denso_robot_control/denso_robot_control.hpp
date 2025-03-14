@@ -58,18 +58,21 @@ using hardware_interface::return_type;
 #define JOINT_MAX (8)
 
 
-namespace denso_robot_control {
+namespace denso_robot_control
+{
 
 class DensoRobotControl
 {
 public:
   DensoRobotControl(
-    const std::string& node_name, const std::string& node_namespace, const std::string& robot_name,
-    const std::string& robot_ip_address, int ctrl_type, int robot_joints, std::vector<int> joint_type,
+    const std::string & node_name, const std::string & node_namespace,
+    const std::string & robot_name,
+    const std::string & robot_ip_address, int ctrl_type, int robot_joints,
+    std::vector<int> joint_type,
     int arm_group, int send_format, int recv_format, bool verbose);
   virtual ~DensoRobotControl();
 
-  HRESULT Initialize(std::vector<double>& pos_interface, std::vector<double>& cmd_interface);
+  HRESULT Initialize(std::vector<double> & pos_interface, std::vector<double> & cmd_interface);
 
   rclcpp::Time getTime() const
   {
@@ -81,22 +84,20 @@ public:
     return ctrl_->get_Duration();
   }
 
-  void setNode(rclcpp::Node::SharedPtr& node)
+  void setNode(rclcpp::Node::SharedPtr & node)
   {
     node_ = node;
   }
 
-  void read(std::vector<double>& pos_interface);
-  void write(std::vector<double>& cmd_interface);
+  void read(std::vector<double> & pos_interface);
+  void write(std::vector<double> & cmd_interface);
   void Start();
   void Stop();
   void Update();
 
   bool isSlaveSyncMode() const;
 
-
 private:
-
   // Store the commands for the real robot
   double cmd_[JOINT_MAX];
   double pos_[JOINT_MAX];
@@ -130,7 +131,7 @@ private:
     std::shared_ptr<denso_robot_core_interfaces::srv::ChangeMode::Response> response);
 
   bool hasError();
-  void printErrorDescription(HRESULT error_code, const std::string& error_message);
+  void printErrorDescription(HRESULT error_code, const std::string & error_message);
 
   DensoRobotCore_Ptr eng_;
   DensoController_Ptr ctrl_;

@@ -28,7 +28,8 @@
 
 #include "denso_robot_control/denso_robot_control.hpp"
 
-namespace denso_robot_control {
+namespace denso_robot_control
+{
 
 class DensoRobotHW : public hardware_interface::SystemInterface
 {
@@ -37,16 +38,23 @@ public:
 
   HRESULT Initialize();
 
-  hardware_interface::CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
+  hardware_interface::CallbackReturn on_init(
+    const hardware_interface::HardwareInfo & info) override;
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
-  hardware_interface::CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
-  hardware_interface::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
-  hardware_interface::return_type read(const rclcpp::Time & time, const rclcpp::Duration & period) override;
-  hardware_interface::return_type write(const rclcpp::Time & time, const rclcpp::Duration & period) override;
+  hardware_interface::CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state)
+  override;
+  hardware_interface::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state)
+  override;
+  hardware_interface::return_type read(
+    const rclcpp::Time & time,
+    const rclcpp::Duration & period) override;
+  hardware_interface::return_type write(
+    const rclcpp::Time & time,
+    const rclcpp::Duration & period) override;
 
-  void SpinNode(rclcpp::Node::SharedPtr& node, DensoRobotControl_Ptr drobo);
+  void SpinNode(rclcpp::Node::SharedPtr & node, DensoRobotControl_Ptr drobo);
 
   HardwareInfo info_;
   // Store the commands for the real robot

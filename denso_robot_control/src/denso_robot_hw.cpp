@@ -26,7 +26,8 @@
 #include "rclcpp/rclcpp.hpp"
 
 
-namespace denso_robot_control {
+namespace denso_robot_control
+{
 
 hardware_interface::CallbackReturn
 DensoRobotHW::on_init(const hardware_interface::HardwareInfo & info)
@@ -122,13 +123,13 @@ std::vector<hardware_interface::CommandInterface> DensoRobotHW::export_command_i
   for (uint i = 0; i < info_.joints.size(); i++) {
     command_interfaces.emplace_back(
       hardware_interface::CommandInterface(
-      info_.joints[i].name, hardware_interface::HW_IF_POSITION, &cmd_interface_[i]));
+        info_.joints[i].name, hardware_interface::HW_IF_POSITION, &cmd_interface_[i]));
 
     // Denso robots allow exactly one command interface on each joint (POSITION type),
     // so VELOCITY commands are ignored
     command_interfaces.emplace_back(
       hardware_interface::CommandInterface(
-      info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, NULL));
+        info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, NULL));
   }
 
   return command_interfaces;
@@ -176,7 +177,7 @@ DensoRobotHW::on_activate(const rclcpp_lifecycle::State & /* previous_state */)
   std::string str_true = "True";
   std::string str_verbose = info_.hardware_parameters["verbose"].c_str();
   verbose = std::equal(
-    str_true.begin(),str_true.end(), str_verbose.begin(), str_verbose.begin() + str_true.length());
+    str_true.begin(), str_true.end(), str_verbose.begin(), str_verbose.begin() + str_true.length());
   if (verbose) {
     RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "*******************************************");
     RCLCPP_INFO(
@@ -195,7 +196,7 @@ DensoRobotHW::on_activate(const rclcpp_lifecycle::State & /* previous_state */)
     for (int i = 0; i < robot_joints; i++) {
       RCLCPP_INFO(
         rclcpp::get_logger("DensoRobotHW"),
-        "***** joint_%d type (0 = prismatic ; 1 = revolute):  %d", i+1, joint_type[i]);
+        "***** joint_%d type (0 = prismatic ; 1 = revolute):  %d", i + 1, joint_type[i]);
     }
     RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "***** arm group: %d", arm_group);
     RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "***** send format: %d", send_format);
@@ -238,8 +239,9 @@ DensoRobotHW::on_deactivate(const rclcpp_lifecycle::State & /* previous_state */
   return CallbackReturn::SUCCESS;
 }
 
-hardware_interface::return_type DensoRobotHW::read(const rclcpp::Time & /* time */,
-                                                   const rclcpp::Duration & /* period */)
+hardware_interface::return_type DensoRobotHW::read(
+  const rclcpp::Time & /* time */,
+  const rclcpp::Duration & /* period */)
 {
   std::unique_lock<std::mutex> lock_mode(mtx_mode_);
   // read robot current position
@@ -247,8 +249,9 @@ hardware_interface::return_type DensoRobotHW::read(const rclcpp::Time & /* time 
   return return_type::OK;
 }
 
-hardware_interface::return_type DensoRobotHW::write(const rclcpp::Time & /* time */,
-                                                    const rclcpp::Duration & /* period */)
+hardware_interface::return_type DensoRobotHW::write(
+  const rclcpp::Time & /* time */,
+  const rclcpp::Duration & /* period */)
 {
   std::unique_lock<std::mutex> lock_mode(mtx_mode_);
   drobo_->write(cmd_interface_);
@@ -256,18 +259,18 @@ hardware_interface::return_type DensoRobotHW::write(const rclcpp::Time & /* time
 }
 
 // ***************************************************************************************************
-void DensoRobotHW::SpinNode(rclcpp::Node::SharedPtr& node, DensoRobotControl_Ptr drobo)
+void DensoRobotHW::SpinNode(rclcpp::Node::SharedPtr & node, DensoRobotControl_Ptr drobo)
 {
   RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "***** Starting DENSO robot control thread ...");
-    std::thread denso_thread([node, drobo]() {
-    rclcpp::WallRate loop_rate(1000);
-    while (rclcpp::ok()) {
-      rclcpp::spin_some(node);
-      drobo->Update();
-      loop_rate.sleep();
-    }
-    rclcpp::shutdown();
-  });
+  std::thread denso_thread([node, drobo]() {
+      rclcpp::WallRate loop_rate(1000);
+      while (rclcpp::ok()) {
+        rclcpp::spin_some(node);
+        drobo->Update();
+        loop_rate.sleep();
+      }
+      rclcpp::shutdown();
+    });
 
   denso_thread.detach();
   RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "***** DENSO robot control thread started !!");
