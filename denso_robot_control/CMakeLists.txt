@@ -17,6 +17,7 @@ endif()
 
 set(
   THIS_PACKAGE_INCLUDE_DEPENDS
+  controller_manager
   hardware_interface
   pluginlib
   rclcpp
@@ -45,6 +46,7 @@ add_library(
   src/${PROJECT_NAME}.cpp)
 
 add_executable(${PROJECT_NAME}_exec src/${PROJECT_NAME}.cpp)
+add_executable(denso_ros2_control_node src/denso_ros2_control_node.cpp)
 
 target_link_libraries(
   ${PROJECT_NAME}_exec
@@ -63,6 +65,17 @@ target_include_directories(
 
 ament_target_dependencies(
   ${PROJECT_NAME}_exec
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+target_include_directories(
+  denso_ros2_control_node
+  PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>")
+
+ament_target_dependencies(
+  denso_ros2_control_node
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
@@ -113,6 +126,10 @@ install(
   RUNTIME DESTINATION lib/${PROJECT_NAME}
   INCLUDES DESTINATION include)
 
+install(
+  TARGETS denso_ros2_control_node
+  RUNTIME DESTINATION lib/${PROJECT_NAME})
+
 
 #=============
 # Export
@@ -130,4 +147,3 @@ if(BUILD_TESTING)
 endif()
 
 ament_package()
-
