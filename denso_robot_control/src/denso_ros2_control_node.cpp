@@ -36,12 +36,9 @@ constexpr std::chrono::nanoseconds kDefaultControlPeriod = std::chrono::millisec
 
 rclcpp::Duration GetFixedPeriod(const controller_manager::ControllerManager & cm)
 {
-  rclcpp::Parameter update_rate_parameter;
-  if (cm.get_parameter("update_rate", update_rate_parameter)) {
-    const auto update_rate = update_rate_parameter.as_int();
-    if (update_rate > 0) {
-      return rclcpp::Duration::from_nanoseconds(1000000000LL / update_rate);
-    }
+  const auto update_rate = cm.get_update_rate();
+  if (update_rate > 0) {
+    return rclcpp::Duration::from_nanoseconds(1'000'000'000LL / update_rate);
   }
 
   return rclcpp::Duration::from_nanoseconds(kDefaultControlPeriod.count());
