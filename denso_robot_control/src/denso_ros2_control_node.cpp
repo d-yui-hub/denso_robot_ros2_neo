@@ -54,7 +54,10 @@ int main(int argc, char ** argv)
     executor, "controller_manager");
 
   const auto fixed_period = GetFixedPeriod(*cm);
-  auto virtual_time = rclcpp::Time(0, 0, RCL_ROS_TIME);
+  // Anchor the virtual clock to real system time (once at startup) so that
+  // /joint_states header stamps share the same clock/epoch as move_group,
+  // while still advancing in strict fixed_period (8 ms) steps below.
+  auto virtual_time = cm->now();
 
   executor->add_node(cm);
   std::thread executor_thread([executor]() { executor->spin(); });
