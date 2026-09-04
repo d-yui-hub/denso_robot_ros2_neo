@@ -33,6 +33,7 @@ set(
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(Threads REQUIRED)
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
@@ -78,6 +79,10 @@ ament_target_dependencies(
   denso_ros2_control_node
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+target_link_libraries(
+  denso_ros2_control_node
+  Threads::Threads)
 
 target_link_libraries(
   ${PROJECT_NAME}_plugin
