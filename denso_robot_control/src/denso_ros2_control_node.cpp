@@ -57,6 +57,8 @@ rclcpp::Duration GetFixedPeriod(const controller_manager::ControllerManager & cm
   return rclcpp::Duration::from_nanoseconds(kDefaultControlPeriod.count());
 }
 
+// NOTE: must run on the control-loop thread (the thread that executes read/update/write below),
+// since pthread_setschedparam()/setpriority() affect the calling thread.
 void RaiseControlThreadPriority(const rclcpp::Logger & logger)
 {
   sched_param param{};
@@ -78,8 +80,10 @@ void RaiseControlThreadPriority(const rclcpp::Logger & logger)
   }
 
   RCLCPP_WARN(
-    logger, "Failed to raise priority (SCHED_FIFO: %d/%s, nice: %d/%s)", sched_error,
-    std::strerror(sched_error), nice_error, std::strerror(nice_error));
+    logger,
+    "Failed to raise priority (SCHED_FIFO: %d/%s, nice: %d/%s); grant CAP_SYS_NICE or raise "
+    "the RT priority (rtprio) ulimit",
+    sched_error, std::strerror(sched_error), nice_error, std::strerror(nice_error));
 }
 
 timespec GetThreadCpuTime()
@@ -113,12 +117,13 @@ void PrintCycleOverrun(double read_wall_ms, double update_wall_ms, double write_
   }
 
   const double total_cpu_ms = read_cpu_ms + update_cpu_ms + write_cpu_ms;
+  const double delta_ms = total_wall_ms - total_cpu_ms;
   std::ostringstream stream;
   stream << std::fixed << std::setprecision(3)
          << "[CYCLE_OVERRUN] wall=" << total_wall_ms << "ms (R=" << read_wall_ms
          << " U=" << update_wall_ms << " W=" << write_wall_ms << ") cpu=" << total_cpu_ms
          << "ms (R=" << read_cpu_ms << " U=" << update_cpu_ms << " W=" << write_cpu_ms
-         << ")";
+         << ") delta=" << delta_ms << "ms";
   std::cout << stream.str() << std::endl;
 }
 }  // namespace
