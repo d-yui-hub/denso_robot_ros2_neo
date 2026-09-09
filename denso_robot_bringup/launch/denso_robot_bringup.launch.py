@@ -307,8 +307,8 @@ def generate_launch_description():
         ])
 
     control_node = Node(
-        package='controller_manager',
-        executable='ros2_control_node',
+        package='denso_robot_control',
+        executable='denso_ros2_control_node',
         condition=UnlessCondition(sim),
         parameters=[
             robot_description,
