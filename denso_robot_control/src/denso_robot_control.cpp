@@ -144,6 +144,10 @@ HRESULT DensoRobotControl::Initialize(
   memset(pos_, 0, sizeof(pos_));
   memset(vel_, 0, sizeof(vel_));
   memset(eff_, 0, sizeof(eff_));
+  memset(prev_cmd_, 0, sizeof(prev_cmd_));
+  memset(prev_vel_cmd_, 0, sizeof(prev_vel_cmd_));
+  prev_write_time_ = getTime();
+  has_prev_write_ = false;
 
   if (verbose_) {
     RCLCPP_INFO(
@@ -290,6 +294,17 @@ HRESULT DensoRobotControl::Initialize(
       std::placeholders::_2));
 
   pub_cur_mode_ = node_->create_publisher<std_msgs::msg::Int32>("CurMode", 1);
+
+  if (verbose_) {
+    pub_debug_cmd_position_ = node_->create_publisher<std_msgs::msg::Float64MultiArray>(
+      "debug/cmd_position", 1);
+    pub_debug_cmd_velocity_ = node_->create_publisher<std_msgs::msg::Float64MultiArray>(
+      "debug/cmd_velocity", 1);
+    pub_debug_cmd_acceleration_ = node_->create_publisher<std_msgs::msg::Float64MultiArray>(
+      "debug/cmd_acceleration", 1);
+    pub_debug_cmd_dt_ = node_->create_publisher<std_msgs::msg::Float64MultiArray>(
+      "debug/cmd_dt", 1);
+  }
 
   if (verbose_) {
     RCLCPP_INFO(rclcpp::get_logger(node_->get_name()), "[DEBUG] Changing to slave mode ...");
@@ -514,10 +529,29 @@ void DensoRobotControl::write(std::vector<double> & cmd_interface)
   std::unique_lock<std::mutex> lock_mode(mtx_mode_);
   if (eng_->get_Mode() != DensoRobot::SLVMODE_NONE) {
     std::vector<double> pose;
+    const bool debug_publish_enabled = verbose_ && pub_debug_cmd_position_ &&
+      pub_debug_cmd_velocity_ && pub_debug_cmd_acceleration_ && pub_debug_cmd_dt_;
+    std::vector<double> cmd_vel(robot_joints_, 0.0);
+    std::vector<double> cmd_acc(robot_joints_, 0.0);
+    double period_sec = 0.0;
+    double wall_dt_sec = 0.0;
+    rclcpp::Time write_time;
+    const double min_dt_sec = 1.0e-9;
+    bool valid_period = false;
+    if (debug_publish_enabled) {
+      period_sec = getPeriod().seconds();
+      write_time = getTime();
+      wall_dt_sec = (write_time - prev_write_time_).seconds();
+      valid_period = period_sec > min_dt_sec;
+    }
     pose.resize(JOINT_MAX);
     int bits = 0x0000;
     for (int i = 0; i < robot_joints_; i++) {
       cmd_[i] = cmd_interface[i];
+      if (debug_publish_enabled && has_prev_write_ && valid_period) {
+        cmd_vel[i] = (cmd_[i] - prev_cmd_[i]) / period_sec;
+        cmd_acc[i] = (cmd_vel[i] - prev_vel_cmd_[i]) / period_sec;
+      }
       switch (type_[i]) {
         case 0:    // prismatic
           pose[i] = M_2_MM(cmd_[i]);
@@ -532,6 +566,38 @@ void DensoRobotControl::write(std::vector<double> & cmd_interface)
       }
       bits |= (1 << i);
     }
+
+    if (debug_publish_enabled) {
+      std_msgs::msg::Float64MultiArray pos_msg;
+      std_msgs::msg::Float64MultiArray vel_msg;
+      std_msgs::msg::Float64MultiArray acc_msg;
+      std_msgs::msg::Float64MultiArray dt_msg;
+      pos_msg.data.resize(robot_joints_);
+      vel_msg.data.resize(robot_joints_, 0.0);
+      acc_msg.data.resize(robot_joints_, 0.0);
+      for (int i = 0; i < robot_joints_; i++) {
+        pos_msg.data[i] = cmd_[i];
+        if (has_prev_write_ && valid_period) {
+          vel_msg.data[i] = cmd_vel[i];
+          acc_msg.data[i] = cmd_acc[i];
+          prev_vel_cmd_[i] = cmd_vel[i];
+        } else {
+          prev_vel_cmd_[i] = 0.0;
+        }
+        prev_cmd_[i] = cmd_[i];
+      }
+      if (!has_prev_write_ || wall_dt_sec <= min_dt_sec) {
+        wall_dt_sec = 0.0;
+      }
+      dt_msg.data = {wall_dt_sec, period_sec};
+      pub_debug_cmd_position_->publish(pos_msg);
+      pub_debug_cmd_velocity_->publish(vel_msg);
+      pub_debug_cmd_acceleration_->publish(acc_msg);
+      pub_debug_cmd_dt_->publish(dt_msg);
+      prev_write_time_ = write_time;
+      has_prev_write_ = true;
+    }
+
     // TODO: what is the purpose of this "push_back" function call ?
     // why "0x400000 | bits" ?
     pose.push_back(0x400000 | bits);
