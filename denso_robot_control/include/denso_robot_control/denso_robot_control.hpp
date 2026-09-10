@@ -148,6 +148,10 @@ private:
   rclcpp::Publisher<std_msgs::msg::UInt32>::SharedPtr pub_hand_io_;
   rclcpp::Publisher<denso_robot_core_interfaces::msg::UserIO>::SharedPtr pub_recv_user_io_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_current_;
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_debug_cmd_position_;
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_debug_cmd_velocity_;
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_debug_cmd_acceleration_;
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_debug_cmd_dt_;
 
   // ChangeMode Service
   rclcpp::Service<denso_robot_core_interfaces::srv::ChangeMode>::SharedPtr change_mode_srv_;
@@ -156,6 +160,11 @@ private:
 
   // ROS2 Node Handle
   rclcpp::Node::SharedPtr node_;
+
+  double prev_cmd_[JOINT_MAX];
+  double prev_vel_cmd_[JOINT_MAX];
+  rclcpp::Time prev_write_time_;
+  bool has_prev_write_;
 
 };
 
