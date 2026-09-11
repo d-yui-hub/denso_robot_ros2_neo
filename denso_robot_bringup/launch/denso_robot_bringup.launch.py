@@ -225,6 +225,7 @@ def generate_launch_description():
                 # default_planner_request_adapters/FixStartStateCollision \
                 # default_planner_request_adapters/FixStartStatePathConstraints""",
             'request_adapters': 'default_planner_request_adapters/AddTimeOptimalParameterization' \
+                + ' default_planner_request_adapters/AddRuckigTrajectorySmoothing' \
                 + ' default_planner_request_adapters/FixWorkspaceBounds' \
                 + ' default_planner_request_adapters/FixStartStateBounds' \
                 + ' default_planner_request_adapters/FixStartStateCollision' \
