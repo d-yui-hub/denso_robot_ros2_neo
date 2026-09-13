@@ -72,6 +72,7 @@ private:
   // Indexing is always aligned to info_.joints (same as cmd_interface_ order), not /joint_states order.
   std::vector<double> cmd_prev_;             // previous commanded position
   std::vector<double> vel_prev_;             // previous commanded velocity
+  std::vector<double> cmd_clamped_;          // reusable clamped command buffer
   std::vector<double> max_accelerations_;    // per-joint acceleration limit, ordered like info_.joints
   std::vector<double> max_velocities_;       // per-joint velocity limit, ordered like info_.joints
   bool accel_clamp_enabled_{false};          // enabled only when limits are provided

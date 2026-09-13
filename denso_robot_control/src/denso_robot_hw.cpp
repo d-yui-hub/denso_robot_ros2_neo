@@ -165,7 +165,7 @@ DensoRobotHW::on_init(const hardware_interface::HardwareInfo & info)
 std::vector<hardware_interface::StateInterface> DensoRobotHW::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
-  for (uint i = 0; i < info_.joints.size(); i++) {
+  for (std::size_t i = 0; i < info_.joints.size(); i++) {
     state_interfaces.emplace_back(
       hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_POSITION, &pos_interface_[i]));
@@ -293,6 +293,7 @@ DensoRobotHW::on_activate(const rclcpp_lifecycle::State & /* previous_state */)
     }
   }
   vel_prev_.assign(info_.joints.size(), 0.0);
+  cmd_clamped_.assign(info_.joints.size(), 0.0);
 
   RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "System successfully started !!");
   return CallbackReturn::SUCCESS;
@@ -338,8 +339,8 @@ hardware_interface::return_type DensoRobotHW::write(
     dt = 0.008;
   }
 
-  std::vector<double> cmd_clamped = cmd_interface_;
-  for (uint i = 0; i < info_.joints.size(); i++) {
+  cmd_clamped_ = cmd_interface_;
+  for (std::size_t i = 0; i < info_.joints.size(); i++) {
     const double cmd_target = std::isfinite(cmd_interface_[i]) ? cmd_interface_[i] : cmd_prev_[i];
     const double v_target = (cmd_target - cmd_prev_[i]) / dt;
     const double a = (v_target - vel_prev_[i]) / dt;
@@ -350,10 +351,10 @@ hardware_interface::return_type DensoRobotHW::write(
 
     cmd_prev_[i] = cmd_write;
     vel_prev_[i] = v;
-    cmd_clamped[i] = cmd_write;
+    cmd_clamped_[i] = cmd_write;
   }
 
-  drobo_->write(cmd_clamped);
+  drobo_->write(cmd_clamped_);
   return return_type::OK;
 }
 
