@@ -14,13 +14,16 @@
 
 #include "denso_robot_control/denso_robot_hw.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
-// #include <limits>
+#include <limits>
 // #include <memory>
 // #include <vector>
-#include <thread>
 #include <functional>
+#include <sstream>
+#include <string>
+#include <thread>
 
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -28,6 +31,28 @@
 
 namespace denso_robot_control
 {
+
+namespace
+{
+bool parse_double_array(const std::string & raw, std::vector<double> & out)
+{
+  std::string normalized = raw;
+  std::replace(normalized.begin(), normalized.end(), ',', ' ');
+
+  std::stringstream ss(normalized);
+  double value = 0.0;
+  out.clear();
+  while (ss >> value) {
+    out.push_back(value);
+  }
+
+  if (ss.fail()) {
+    ss.clear();
+  }
+  ss >> std::ws;
+  return ss.eof();
+}
+}  // namespace
 
 hardware_interface::CallbackReturn
 DensoRobotHW::on_init(const hardware_interface::HardwareInfo & info)
@@ -41,6 +66,44 @@ DensoRobotHW::on_init(const hardware_interface::HardwareInfo & info)
   vel_interface_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
   eff_interface_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
   cmd_interface_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
+
+  // Optional <hardware><param> values passed from ros2_control/xacro.
+  // Example (info_.joints order, e.g. joint_1..joint_6):
+  //   max_accelerations: "10.0 19.0 10.0 20.0 20.0 30.0"
+  //   max_velocities:    "4.0,4.0,5.0,7.0,7.0,15.0"
+  const auto accel_it = info_.hardware_parameters.find("max_accelerations");
+  const auto vel_it = info_.hardware_parameters.find("max_velocities");
+  accel_clamp_enabled_ = false;
+  max_accelerations_.clear();
+  max_velocities_.clear();
+  if (accel_it != info_.hardware_parameters.end() && vel_it != info_.hardware_parameters.end()) {
+    const bool accel_parsed = parse_double_array(accel_it->second, max_accelerations_);
+    const bool vel_parsed = parse_double_array(vel_it->second, max_velocities_);
+    const bool size_match =
+      max_accelerations_.size() == info_.joints.size() &&
+      max_velocities_.size() == info_.joints.size();
+    const bool value_ok =
+      std::all_of(
+      max_accelerations_.begin(), max_accelerations_.end(),
+      [](double v) {return std::isfinite(v) && v > 0.0;}) &&
+      std::all_of(
+      max_velocities_.begin(), max_velocities_.end(),
+      [](double v) {return std::isfinite(v) && v > 0.0;});
+    accel_clamp_enabled_ = accel_parsed && vel_parsed && size_match && value_ok;
+
+    if (!accel_clamp_enabled_) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("DensoRobotHW"),
+        "Acceleration clamp disabled: invalid max_accelerations/max_velocities parameter(s). "
+        "Both arrays must be finite positive values and match joint count (%zu).",
+        info_.joints.size());
+    }
+  } else {
+    RCLCPP_WARN(
+      rclcpp::get_logger("DensoRobotHW"),
+      "Acceleration clamp disabled: hardware parameters 'max_accelerations' and/or "
+      "'max_velocities' are not set.");
+  }
 
   for (const hardware_interface::ComponentInfo & joint : info_.joints) {
     // Denso robots allow exactly one command interface on each joint (POSITION type).
@@ -102,7 +165,7 @@ DensoRobotHW::on_init(const hardware_interface::HardwareInfo & info)
 std::vector<hardware_interface::StateInterface> DensoRobotHW::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
-  for (uint i = 0; i < info_.joints.size(); i++) {
+  for (std::size_t i = 0; i < info_.joints.size(); i++) {
     state_interfaces.emplace_back(
       hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_POSITION, &pos_interface_[i]));
@@ -223,6 +286,15 @@ DensoRobotHW::on_activate(const rclcpp_lifecycle::State & /* previous_state */)
 
   SpinNode(node, drobo_);
 
+  cmd_prev_ = pos_interface_;
+  for (double & cmd_prev : cmd_prev_) {
+    if (std::isnan(cmd_prev)) {
+      cmd_prev = 0.0;
+    }
+  }
+  vel_prev_.assign(info_.joints.size(), 0.0);
+  cmd_clamped_.assign(info_.joints.size(), 0.0);
+
   RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "System successfully started !!");
   return CallbackReturn::SUCCESS;
 }
@@ -251,10 +323,38 @@ hardware_interface::return_type DensoRobotHW::read(
 
 hardware_interface::return_type DensoRobotHW::write(
   const rclcpp::Time & /* time */,
-  const rclcpp::Duration & /* period */)
+  const rclcpp::Duration & period)
 {
   std::unique_lock<std::mutex> lock_mode(mtx_mode_);
-  drobo_->write(cmd_interface_);
+
+  if (!accel_clamp_enabled_) {
+    drobo_->write(cmd_interface_);
+    return return_type::OK;
+  }
+
+  // RC8 takes only position commands. Parameters must be provided in info_.joints order
+  // (same index space as cmd_interface_), not /joint_states order.
+  double dt = period.seconds();
+  if (!(dt > 1e-4 && dt < 1.0)) {
+    dt = 0.008;
+  }
+
+  cmd_clamped_ = cmd_interface_;
+  for (std::size_t i = 0; i < info_.joints.size(); i++) {
+    const double cmd_target = std::isfinite(cmd_interface_[i]) ? cmd_interface_[i] : cmd_prev_[i];
+    const double v_target = (cmd_target - cmd_prev_[i]) / dt;
+    const double a = (v_target - vel_prev_[i]) / dt;
+    const double a_clamped = std::clamp(a, -max_accelerations_[i], max_accelerations_[i]);
+    const double v = std::clamp(
+      vel_prev_[i] + a_clamped * dt, -max_velocities_[i], max_velocities_[i]);
+    const double cmd_write = cmd_prev_[i] + v * dt;
+
+    cmd_prev_[i] = cmd_write;
+    vel_prev_[i] = v;
+    cmd_clamped_[i] = cmd_write;
+  }
+
+  drobo_->write(cmd_clamped_);
   return return_type::OK;
 }
 
