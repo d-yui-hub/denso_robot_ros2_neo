@@ -34,8 +34,6 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'model',
             description='Type/series of used denso robot.'))
-    # TODO: shall we let the user to only select from a list of robots ??
-    # choices=['cobotta', 'vs060', 'vs087']))
     declared_arguments.append(
         DeclareLaunchArgument(
             'sim', default_value='true',

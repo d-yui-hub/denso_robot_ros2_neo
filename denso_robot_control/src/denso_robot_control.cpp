@@ -532,8 +532,6 @@ void DensoRobotControl::write(std::vector<double> & cmd_interface)
       }
       bits |= (1 << i);
     }
-    // TODO: what is the purpose of this "push_back" function call ?
-    // why "0x400000 | bits" ?
     pose.push_back(0x400000 | bits);
 
     HRESULT hr = rob_->ExecSlaveMove(pose, joint_);

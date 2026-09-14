@@ -82,8 +82,6 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'model',
             description='Type/series of used denso robot.'))
-    # TODO: shall we let the user to only select from a list of robots ??
-    # choices=['cobotta', 'vs060', 'vs087']))
     declared_arguments.append(
         DeclareLaunchArgument(
             'send_format', default_value='288',
@@ -134,10 +132,6 @@ def generate_launch_description():
             'robot_controller', default_value='denso_joint_trajectory_controller',
             description='Robot controller to start.'))
 # Execution arguments (Rviz and Gazebo)
-# TODO: shall we give the user the choice not to load the rviz graphical environment ??
-#    declared_arguments.append(
-#        DeclareLaunchArgument('launch_rviz', default_value='true', description='Launch RViz?')
-#    )
     declared_arguments.append(
         DeclareLaunchArgument(
             'sim', default_value='true',
@@ -158,7 +152,6 @@ def generate_launch_description():
     description_package = LaunchConfiguration('description_package')
     description_file = LaunchConfiguration('description_file')
     namespace = LaunchConfiguration('namespace')
-#    launch_rviz = LaunchConfiguration('launch_rviz')
     sim = LaunchConfiguration('sim')
     verbose = LaunchConfiguration('verbose')
     controllers_file = LaunchConfiguration('controllers_file')
@@ -224,21 +217,6 @@ def generate_launch_description():
         executable='spawner',
         arguments=[robot_controller, '-c', '/controller_manager'])
 
-# TODO: do we need the Warehouse mongodb server ?
-# (always / never / only in simulation with Gazebo ...)
-    # Warehouse mongodb server
-
-#    mongodb_server_node = Node(
-#        package='warehouse_ros_mongo',
-#        executable='mongo_wrapper_ros.py',
-#        parameters=[
-#            {'warehouse_port': 33829},
-#            {'warehouse_host': 'localhost'},
-#            {'warehouse_plugin': 'warehouse_ros_mongo::MongoDatabaseConnection'}
-#        ],
-#        output='screen',
-#    )
-
     # Static TF
     static_tf = Node(
         package='tf2_ros',
@@ -253,7 +231,6 @@ def generate_launch_description():
     nodes_to_start = [
         control_node,
         robot_controller_spawner,
-#        mongodb_server_node,
         static_tf,
         robot_state_publisher_node,
         joint_state_broadcaster_spawner

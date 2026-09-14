@@ -982,12 +982,6 @@ HRESULT DensoRobot::CreateSendParameter(
       return E_FAIL;
   }
 
-  // TODO: do we need this control ? Why?
-  // if(joints < pose.size())
-  // {
-    // return E_FAIL;
-  // }
-
   // Check send format
   bool send_hio, send_mio, send_uio, recv_uio;
   send_hio = m_sendfmt & SENDFMT_HANDIO;
@@ -1891,25 +1885,18 @@ void DensoRobot::Callback_Cancel()
   if (m_curAct > ACT_NONE) {
     ExecHalt();
 
-  // TODO: check the equivalent for setPreempted() function in ROS2
     switch (m_curAct) {
       case ACT_MOVESTRING:
-        // m_actMoveString->setPreempted();
         break;
       case ACT_MOVEVALUE:
-        // m_actMoveValue->setPreempted();
         break;
       case ACT_DRIVEEXSTRING:
-        // m_actDriveExString->setPreempted();
         break;
       case ACT_DRIVEEXVALUE:
-        // m_actDriveExValue->setPreempted();
         break;
       case ACT_DRIVEAEXSTRING:
-        // m_actDriveAExString->setPreempted();
         break;
       case ACT_DRIVEAEXVALUE:
-        // m_actDriveAExValue->setPreempted();
         break;
     }
     m_curAct = ACT_NONE;

@@ -102,7 +102,6 @@ HRESULT BCAPService::Connect()
   HRESULT hr;
   std::stringstream  ss1;
   std::wstringstream ss2;
-  // TODO: do we need a "sleep" here ??
       std::this_thread::sleep_for(std::chrono::seconds(m_wait));
 
   RCLCPP_INFO(rclcpp::get_logger(m_node->get_name()), "************* DENSO robot connection parameters *************");
