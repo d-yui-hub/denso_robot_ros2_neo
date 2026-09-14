@@ -135,9 +135,7 @@ int main(int argc, char ** argv)
     executor, "controller_manager");
 
   const auto fixed_period = GetFixedPeriod(*cm);
-  // Anchor the virtual clock to real system time (once at startup) so that
-  // /joint_states header stamps share the same clock/epoch as move_group,
-  // while still advancing in strict fixed_period (8 ms) steps below.
+  // Advance virtual time in fixed_period steps from startup.
   auto virtual_time = cm->now();
 
   executor->add_node(cm);
@@ -148,13 +146,7 @@ int main(int argc, char ** argv)
     static_cast<double>(fixed_period.nanoseconds()) / 1.0e6);
   RaiseControlThreadPriority(cm->get_logger());
 
-  // Safety principle: never add sleep(), WallRate, or any other real-time pacing here.
-  // The DENSO controller's SYNC write() blocking is the only valid pacing source; introducing
-  // a second software clock risks buffer depletion and a robot stop.
-  //
-  // Startup buffer fill is intentionally left to the existing natural fast loop when write()
-  // is not yet blocking. Dedicated underrun mitigation is a separate phase-2 task and is
-  // intentionally out of scope for this node.
+  // Keep pacing source unchanged: SYNC write() blocking only.
   while (rclcpp::ok()) {
     const auto read_wall_start = std::chrono::steady_clock::now();
     const auto read_cpu_start = GetThreadCpuTime();

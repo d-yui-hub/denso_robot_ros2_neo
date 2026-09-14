@@ -27,8 +27,6 @@ denso_joint_trajectory_controller:
     action_monitor_rate: 20.0
     allow_partial_joints_goal: false
     open_loop_control: true
-    # 実験A: jerk無効運用時のTOTG矩形加速による立ち上がりオーバーシュートを
-    #        コントローラ段の三次スプライン補間で緩和する。
     interpolation_method: splines
     constraints:
       stopped_velocity_tolerance: 0.0
