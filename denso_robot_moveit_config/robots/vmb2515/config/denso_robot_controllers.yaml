@@ -27,6 +27,7 @@ denso_joint_trajectory_controller:
     action_monitor_rate: 20.0
     allow_partial_joints_goal: false
     open_loop_control: true
+    # 立ち上がりのオーバーシュートを抑えるため三次スプライン補間を使用
     interpolation_method: splines
     constraints:
       stopped_velocity_tolerance: 0.0
