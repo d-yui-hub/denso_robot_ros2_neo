@@ -16,9 +16,6 @@
 
 #include <chrono>
 #include <cmath>
-// #include <limits>
-// #include <memory>
-// #include <vector>
 #include <thread>
 #include <functional>
 
@@ -139,8 +136,6 @@ hardware_interface::CallbackReturn
 DensoRobotHW::on_activate(const rclcpp_lifecycle::State & /* previous_state */)
 {
   RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "Starting DENSO robot drivers ...");
-  // TODO: do we really need this wait time ??
-  // std::this_thread::sleep_for(std::chrono::seconds(5));
 
   // set default values for commands and states
   for (uint i = 0; i < pos_interface_.size(); i++) {
@@ -231,7 +226,6 @@ hardware_interface::CallbackReturn
 DensoRobotHW::on_deactivate(const rclcpp_lifecycle::State & /* previous_state */)
 {
   RCLCPP_INFO(rclcpp::get_logger("DensoRobotHW"), "Stopping robot drivers... ");
-  // TODO: do we really need this wait time ??
   drobo_->Stop();
   std::this_thread::sleep_for(std::chrono::seconds(2));
 
