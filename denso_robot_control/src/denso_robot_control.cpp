@@ -26,9 +26,6 @@
 
 #include <chrono>
 #include <cmath>
-// #include <limits>
-// #include <memory>
-// #include <vector>
 #include <functional>
 
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
@@ -597,8 +594,6 @@ void DensoRobotControl::write(std::vector<double> & cmd_interface)
       has_prev_write_ = true;
     }
 
-    // TODO: what is the purpose of this "push_back" function call ?
-    // why "0x400000 | bits" ?
     pose.push_back(0x400000 | bits);
 
     HRESULT hr = rob_->ExecSlaveMove(pose, joint_);
